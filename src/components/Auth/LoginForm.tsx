@@ -1,18 +1,24 @@
 "use client";
 
+import { authClient } from "@/lib/auth-client";
 import { loginSchema, LoginSchemaType } from "@/lib/zodSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FingerprintIcon, LoaderIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
+import { toast } from "react-toastify";
 import { Button } from "../shadcnui/button";
 import { Field, FieldError, FieldLabel } from "../shadcnui/field";
 import { Input } from "../shadcnui/input";
 
 const LoginForm = () => {
+  const { replace } = useRouter();
+
   const {
     handleSubmit,
     control,
     formState: { isSubmitting },
+    reset,
   } = useForm({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -23,8 +29,40 @@ const LoginForm = () => {
     mode: "all",
   });
 
-  const loginHandler = async ({}: LoginSchemaType) => {
-    console.log("yahu !");
+  const loginHandler = async ({
+    email,
+    password,
+    rememberMe,
+  }: LoginSchemaType) => {
+    try {
+      const { error } = await authClient.signIn.email({
+        email,
+        password,
+        rememberMe,
+      });
+
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success("Login successfull ✅");
+
+        reset();
+
+        replace("/");
+      }
+    } catch (allError) {
+      // if (allError instanceof Error) {
+      //   toast.error(allError.message);
+      // } else {
+      //   toast.error("Unexpected Error: something went wrong please try again");
+      // }
+
+      toast.error(
+        allError instanceof Error ?
+          allError.message
+        : "Unexpected Error: something went wrong please try again",
+      );
+    }
   };
 
   return (

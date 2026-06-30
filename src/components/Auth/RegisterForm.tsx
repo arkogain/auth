@@ -1,18 +1,24 @@
 "use client";
 
+import { authClient } from "@/lib/auth-client";
 import { registerSchema, RegisterSchemaType } from "@/lib/zodSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoaderIcon, UserPlusIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
+import { toast } from "react-toastify";
 import { Button } from "../shadcnui/button";
 import { Field, FieldError, FieldLabel } from "../shadcnui/field";
 import { Input } from "../shadcnui/input";
 
 const RegisterForm = () => {
+  const { replace } = useRouter();
+
   const {
     handleSubmit,
     control,
     formState: { isSubmitting },
+    reset,
   } = useForm({
     resolver: zodResolver(registerSchema),
     defaultValues: {
@@ -24,8 +30,40 @@ const RegisterForm = () => {
     mode: "all",
   });
 
-  const registerHandler = async ({}: RegisterSchemaType) => {
-    console.log("yahu !");
+  const registerHandler = async ({
+    name,
+    email,
+    password,
+  }: RegisterSchemaType) => {
+    try {
+      const { error } = await authClient.signUp.email({
+        name,
+        email,
+        password,
+      });
+
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success("Registration successfull ✅");
+
+        reset();
+
+        replace("/login");
+      }
+    } catch (allError) {
+      // if (allError instanceof Error) {
+      //   toast.error(allError.message);
+      // } else {
+      //   toast.error("Unexpected Error: something went wrong please try again");
+      // }
+
+      toast.error(
+        allError instanceof Error ?
+          allError.message
+        : "Unexpected Error: something went wrong please try again",
+      );
+    }
   };
 
   return (
